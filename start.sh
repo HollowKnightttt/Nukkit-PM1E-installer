@@ -1,26 +1,38 @@
-mkdir nukkit-pm1e
+#!/bin/bash
+
+mkdir -p nukkit-pm1e
 cd nukkit-pm1e
 
-wget https://github.com/PetteriM1/NukkitPetteriM1Edition/releases/download/4567/Nukkit-PM1E.jar
+echo "Downloading Nukkit-PM1E..."
+wget -q --show-progress https://github.com/PetteriM1/NukkitPetteriM1Edition/releases/download/4567/Nukkit-PM1E.jar
 
-echo "please wait for 10 second and it will start installing"
+echo "Starting server to generate configuration files..."
+java -jar Nukkit-PM1E.jar &
+SERVER_PID=$!
 
-java -jar Nukkit-PM1E.jar
+# Wait for the server to boot and generate server.properties
+sleep 12
 
-sleep 10
+# Gracefully stop the server so we can edit properties
+echo "Stopping server to apply configuration..."
+kill -15 $SERVER_PID
+wait $SERVER_PID 2>/dev/null
 
-stop
+# Generate a valid random port (between 10000 and 65535)
+RANDOM_PORT=$((RANDOM % 55535 + 10000))
+echo "Assigned port: $RANDOM_PORT"
 
-RANDOM_PORT=$((RANDOM % 90000 + 10000))
+# Use double quotes for variable expansion and correct property name
+echo "server port and webrtc port cant not be same unless you set the raknet to off"
+sed -i "s/server-port=19132/server-port=$RANDOM_PORT/g" server.properties
 
-sed -i 's/webrtc-port=19132/webrtc-port=$RANDOM_PORT/g' server.properties
-
+echo "Downloading WorldGeneratorExtension plugin..."
+mkdir -p plugins
 cd plugins
+wget -q --show-progress https://github.com/HollowKnightttt/worldgeneratorextension-v1.9.0/releases/download/Ramz--network/WorldGeneratorExtension-1.9.0.jar
 
-wget https://github.com/HollowKnightttt/worldgeneratorextension-v1.9.0/releases/download/Ramz--network/WorldGeneratorExtension-1.9.0.jar
+# Return to root server directory
+cd ..
 
-sleep 3
-
-cd nukkit-pm1e
-
+echo "Starting Nukkit server with plugins..."
 java -jar Nukkit-PM1E.jar
